@@ -21,15 +21,17 @@ from torch.utils.data import Dataset
 
 class ShapenetDataset(Dataset):
 
-    def __init__(self, root, split, npoints=2500, classification=False, class_choice=None, image=False):
+    def __init__(self, root, split, npoints=2500, classification=False, class_choice=None, 
+                 image=False, normalize=True):
 
         self.root = root
         self.split = split.lower()
         self.npoints = npoints
         self.catfile = os.path.join(self.root, 'synsetoffset2category.txt')
         self.cat = {}
-        self.image = image
         self.classification = classification
+        self.image = image
+        self.normalize = normalize
 
         # Open the Category File and Map Folders to Categories
         with open(self.catfile, 'r') as f:
@@ -96,6 +98,7 @@ class ShapenetDataset(Dataset):
                     self.num_seg_classes = l
         #print(self.num_seg_classes)
 
+
     def __getitem__(self, index):
         '''
         Each element has the format "class, points, segmentation labels, segmentation image"
@@ -135,9 +138,12 @@ class ShapenetDataset(Dataset):
             # add N(0, 1/100) noise
             point_set += torch.randn(point_set.shape)/100
 
-        # consider adding random rotations to the object 
-        # construct a randomly parameterized 3x3 rotation matrix
-        
+            # add random rotation to the point cloud
+            point_set = self.random_rotate(point_set)
+
+        # Normalize Point Cloud to (0, 1)
+        if self.normalize:
+            point_set = self.normalize_points(point_set)
         
         if self.classification:
             if self.image:
@@ -151,5 +157,48 @@ class ShapenetDataset(Dataset):
             else:
                 return point_set, seg
 
+
+    @staticmethod
+    def random_rotate(points):
+        ''' randomly rotates point cloud about vertical axis.
+            Code is commented out to rotate about all axes
+            '''
+        # construct a randomly parameterized 3x3 rotation matrix
+        # phi = torch.FloatTensor(1).uniform_(-torch.pi, torch.pi)
+        theta = torch.FloatTensor(1).uniform_(-torch.pi, torch.pi)
+        # psi = torch.FloatTensor(1).uniform_(-torch.pi, torch.pi)
+
+        # rot_x = torch.Tensor([
+        #     [1,              0,                 0],
+        #     [0, torch.cos(phi), -torch.sin(phi)],
+        #     [0, torch.sin(phi), torch.cos(phi) ]])
+
+        rot_y = torch.Tensor([
+            [torch.cos(theta),  0, torch.sin(theta)],
+            [0,               1,                0],
+            [-torch.sin(theta), 0, torch.cos(theta)]])
+
+        # rot_z = torch.Tensor([
+        #     [torch.cos(psi), -torch.sin(psi), 0],
+        #     [torch.sin(psi), torch.cos(psi),  0],
+        #     [0,              0,                 1]])
+
+        # rot = torch.matmul(rot_x, torch.matmul(rot_y, rot_z))
+        
+        return torch.matmul(points, rot_y)
+
+    @staticmethod
+    def normalize_points(points):
+        ''' Perform min/max normalization on points
+            Same as:
+            (x - min(x))/(max(x) - min(x))
+            '''
+        points = points - points.min(axis=0)[0]
+        points /= points.max(axis=0)[0]
+
+        return points
+
+
     def __len__(self):
         return len(self.datapath)
+
