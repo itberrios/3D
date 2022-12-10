@@ -155,8 +155,6 @@ class PointNetBackbone(nn.Module):
         x = self.bn5(F.relu(self.conv5(x)))
 
         # get global feature vector and critical indexes
-        # global_features, critical_indexes = self.max_pool(x).view(bs, -1)
-
         global_features, critical_indexes = self.max_pool(x)
         global_features = global_features.view(bs, -1)
         critical_indexes = critical_indexes.view(bs, -1)
