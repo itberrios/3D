@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Variable
 
 
@@ -28,10 +29,11 @@ class PointNetLoss(nn.Module):
         # get Balanced Cross Entropy Loss
         ce_loss = self.cross_entropy_loss(predictions, targets)
 
-        # reformat predictions and targets
-        predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
-        predictions = predictions.contiguous() \
-                                 .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
+        # reformat predictions and targets (segmentation only)
+        if len(predictions.shape) > 2:
+            predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
+            predictions = predictions.contiguous() \
+                                     .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
 
         # get log softmax of predictions
         log_pn = F.log_softmax(predictions)
@@ -43,8 +45,9 @@ class PointNetLoss(nn.Module):
         pn = Variable(log_pn.data.exp())
 
         # get regularization term
-        if reg > 0:
+        if self.reg_weight > 0:
             I = torch.eye(64).unsqueeze(0).repeat(A.shape[0], 1, 1) # .to(device)
+            if A.is_cuda: I = I.cuda()
             reg = torch.linalg.norm(I - torch.bmm(A, A.transpose(2, 1)))
             reg = self.reg_weight*reg/bs
         else:
@@ -54,3 +57,4 @@ class PointNetLoss(nn.Module):
         loss = ((1 - pn)**self.gamma * ce_loss)
         if self.size_average: return loss.mean() + reg
         else: return loss.sum() + reg
+
