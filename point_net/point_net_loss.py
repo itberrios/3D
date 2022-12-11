@@ -29,7 +29,7 @@ class PointNetLoss(nn.Module):
         # get Balanced Cross Entropy Loss
         ce_loss = self.cross_entropy_loss(predictions, targets)
 
-        # reformat predictions and targets (segmentation only)
+        # reformat predictions (segmentation only)
         if len(predictions.shape) > 2:
             predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
             predictions = predictions.contiguous() \
@@ -43,6 +43,10 @@ class PointNetLoss(nn.Module):
 
         # get predicted probabilities
         pn = Variable(log_pn.data.exp())
+
+        # why not just
+        # pn = F.softmax(predictions)
+        # pn = pn.gather(1, targets.view(-1, 1)).view(-1)
 
         # get regularization term
         if self.reg_weight > 0:
