@@ -25,7 +25,7 @@ class PointNetLoss(nn.Module):
         self.cross_entropy_loss = nn.CrossEntropyLoss(weight=self.alpha)
         
 
-    def forward(self, predictions, targets, A):
+    def forward(self, predictions, targets, A=None):
 
         # get batch size
         bs = predictions.size(0)
