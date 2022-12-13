@@ -1,8 +1,12 @@
+''' Point Net Loss function which is essentially a regularized Focal Loss.
+    Code was adapted from this repo:
+        https://github.com/clcarwin/focal_loss_pytorch
+    '''
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 
 
 class PointNetLoss(nn.Module):
@@ -35,18 +39,9 @@ class PointNetLoss(nn.Module):
             predictions = predictions.contiguous() \
                                      .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
 
-        # get log softmax of predictions
-        log_pn = F.log_softmax(predictions)
-
-        # get predictions at true class indexes
-        log_pn = log_pn.gather(1, targets.view(-1,1)).view(-1)
-
-        # get predicted probabilities
-        pn = Variable(log_pn.data.exp())
-
-        # why not just
-        # pn = F.softmax(predictions)
-        # pn = pn.gather(1, targets.view(-1, 1)).view(-1)
+        # get predicted class probabilities for the true class
+        pn = F.softmax(predictions)
+        pn = pn.gather(1, targets.view(-1, 1)).view(-1)
 
         # get regularization term
         if self.reg_weight > 0:
