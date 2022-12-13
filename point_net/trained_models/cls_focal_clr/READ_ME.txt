@@ -1,3 +1,6 @@
+Loss: Focal Loss with rotaRegularization
+Optimizer: Adam with cyclic learning rate
+
 Train set up
 
 
