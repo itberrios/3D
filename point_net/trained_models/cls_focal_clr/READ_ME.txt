@@ -4,7 +4,7 @@ Optimizer: Adam with cyclic learning rate
 Train set up
 
 
-EPOCHS = 25
+EPOCHS = 50
 LR = 0.0001
 REG_WEIGHT = 0.001 
 
