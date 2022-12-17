@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+# special loss for Classification: Focal Loss + regularization
 class PointNetLoss(nn.Module):
     def __init__(self, alpha=None, gamma=0, reg_weight=0, size_average=True):
         super(PointNetLoss, self).__init__()
@@ -33,12 +34,6 @@ class PointNetLoss(nn.Module):
         # get Balanced Cross Entropy Loss
         ce_loss = self.cross_entropy_loss(predictions, targets)
 
-        # reformat predictions (segmentation only)
-        if len(predictions.shape) > 2:
-            predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
-            predictions = predictions.contiguous() \
-                                     .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
-
         # get predicted class probabilities for the true class
         pn = F.softmax(predictions)
         pn = pn.gather(1, targets.view(-1, 1)).view(-1)
@@ -57,3 +52,70 @@ class PointNetLoss(nn.Module):
         if self.size_average: return loss.mean() + reg
         else: return loss.sum() + reg
 
+
+# special loss for segmentation Focal Loss + Dice Loss
+class PointNetSegLoss(nn.Module):
+    def __init__(self, alpha=None, gamma=0, size_average=True, dice=False):
+        super(PointNetSegLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.size_average = size_average
+        self.dice = dice
+
+        # sanitize inputs
+        if isinstance(alpha,(float, int)): self.alpha = torch.Tensor([alpha,1-alpha])
+        if isinstance(alpha,(list, np.ndarray)): self.alpha = torch.Tensor(alpha)
+
+        # get Balanced Cross Entropy Loss
+        self.cross_entropy_loss = nn.CrossEntropyLoss(weight=self.alpha)
+        
+
+    def forward(self, predictions, targets, pred_choice):
+
+        # get batch size
+        bs = predictions.size(0)
+
+        # get Balanced Cross Entropy Loss
+        ce_loss = self.cross_entropy_loss(predictions.transpose(2, 1), targets)
+
+        # reformat predictions (segmentation only)
+        # predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
+        predictions = predictions.contiguous() \
+                                    .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
+
+        # get predicted class probabilities for the true class
+        pn = F.softmax(predictions)
+        pn = pn.gather(1, targets.view(-1, 1)).view(-1)
+
+        # compute loss (negative sign is included in ce_loss)
+        loss = ((1 - pn)**self.gamma * ce_loss)
+        if self.size_average: loss = loss.mean() 
+        else: loss = loss.sum()
+
+        # add dice coefficient if necessary
+        if self.dice: return loss + self.dice_loss(targets, pred_choice, eps=1)
+        else: return loss
+
+
+    @staticmethod
+    def dice_loss(predictions, targets, eps=1):
+
+        targets = targets.reshape(-1)
+        predictions = predictions.reshape(-1)
+
+        cats = torch.unique(targets)
+
+        top = 0
+        bot = 0
+        for i, c in enumerate(cats):
+            locs = targets == c
+
+            # get truth and predictions for each class
+            y_tru = targets[locs]
+            y_hat = predictions[locs]
+
+            top += torch.sum(y_hat == y_tru)
+            bot += torch.sum(y_hat == y_tru) + len(y_hat)
+
+
+        return 1 - 2*((top + eps)/(bot + eps)) 
