@@ -53,12 +53,12 @@ class S3DIS(Dataset):
             # add N(0, 1/100) noise
             points += np.random.normal(0., 0.01, points.shape)
 
-        # consider adding random rotations to the object 
-        # construct a randomly parameterized 3x3 rotation matrix
+            # add random rotation to the point cloud
+            points = self.random_rotate(points)
+
 
         # Normalize Point Cloud to (0, 1)
-        points = points - points.min(axis=0)
-        points /= points.max(axis=0)
+        points = self.normalize_points(points)
 
         # convert to torch
         points = torch.from_numpy(points).type(torch.float32)
@@ -94,7 +94,7 @@ class S3DIS(Dataset):
         for i, space_path in enumerate(space_paths):
             space_data = pd.read_hdf(space_path, key='space_slice').to_numpy()
             _points = space_data[:, :3] # xyz points
-            _targets = space_data[:, 3]    # integer categories
+            _targets = space_data[:, 3] # integer categories
 
             # downsample point cloud
             _points, _targets = self.downsample(_points, _targets)
@@ -120,6 +120,48 @@ class S3DIS(Dataset):
         targets = targets[choice]
 
         return points, targets
+
+    
+    @staticmethod
+    def random_rotate(points):
+        ''' randomly rotates point cloud about vertical axis.
+            Code is commented out to rotate about all axes
+            '''
+        # construct a randomly parameterized 3x3 rotation matrix
+        phi = np.random.uniform(-np.pi, np.pi)
+        theta = np.random.uniform(-np.pi, np.pi)
+        psi = np.random.uniform(-np.pi, np.pi)
+
+        rot_x = np.array([
+            [1,              0,                 0],
+            [0, np.cos(phi), -np.sin(phi)],
+            [0, np.sin(phi), np.cos(phi) ]])
+
+        rot_y = np.array([
+            [np.cos(theta),  0, np.sin(theta)],
+            [0,                 1,                0],
+            [-np.sin(theta), 0, np.cos(theta)]])
+
+        rot_z = np.array([
+            [np.cos(psi), -np.sin(psi), 0],
+            [np.sin(psi), np.cos(psi),  0],
+            [0,              0,                 1]])
+
+        # rot = np.matmul(rot_x, np.matmul(rot_y, rot_z))
+        
+        return np.matmul(points, rot_z)
+
+
+    @staticmethod
+    def normalize_points(points):
+        ''' Perform min/max normalization on points
+            Same as:
+            (x - min(x))/(max(x) - min(x))
+            '''
+        points = points - points.min(axis=0)
+        points /= points.max(axis=0)
+
+        return points
 
 
     def __len__(self):
