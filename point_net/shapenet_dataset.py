@@ -114,8 +114,6 @@ class ShapenetDataset(Dataset):
         
         # Read the Segmentation Data
         seg = np.loadtxt(fn[2]).astype(np.int64)
-
-        #print(point_set.shape, seg.shape)
         
         # Read the Segmentation Image
         image = Image.open(fn[3])
@@ -175,7 +173,7 @@ class ShapenetDataset(Dataset):
 
         rot_y = torch.Tensor([
             [torch.cos(theta),  0, torch.sin(theta)],
-            [0,               1,                0],
+            [0,                 1,                0],
             [-torch.sin(theta), 0, torch.cos(theta)]])
 
         # rot_z = torch.Tensor([
