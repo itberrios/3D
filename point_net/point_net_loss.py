@@ -70,19 +70,14 @@ class PointNetSegLoss(nn.Module):
         self.cross_entropy_loss = nn.CrossEntropyLoss(weight=self.alpha)
         
 
-    def forward(self, predictions, targets, pred_choice):
-
-        # get batch size
-        bs = predictions.size(0)
+    def forward(self, predictions, targets, pred_choice=None):
 
         # get Balanced Cross Entropy Loss
         ce_loss = self.cross_entropy_loss(predictions.transpose(2, 1), targets)
 
-        # reformat predictions (segmentation only)
-        # predictions = predictions.transpose(1, 2) # (b, c, n) -> (b, n, c)
+        # reformat predictions (b, n, c) -> (b*n, c)
         predictions = predictions.contiguous() \
-                                    .view(-1, predictions.size(2)) # (b, n, c) -> (b*n, c)
-
+                                 .view(-1, predictions.size(2)) 
         # get predicted class probabilities for the true class
         pn = F.softmax(predictions)
         pn = pn.gather(1, targets.view(-1, 1)).view(-1)
@@ -99,6 +94,7 @@ class PointNetSegLoss(nn.Module):
 
     @staticmethod
     def dice_loss(predictions, targets, eps=1):
+        ''' Compute Dice loss, directly compare predictions with truth '''
 
         targets = targets.reshape(-1)
         predictions = predictions.reshape(-1)
@@ -107,7 +103,7 @@ class PointNetSegLoss(nn.Module):
 
         top = 0
         bot = 0
-        for i, c in enumerate(cats):
+        for c in cats:
             locs = targets == c
 
             # get truth and predictions for each class
@@ -115,7 +111,7 @@ class PointNetSegLoss(nn.Module):
             y_hat = predictions[locs]
 
             top += torch.sum(y_hat == y_tru)
-            bot += torch.sum(y_hat == y_tru) + len(y_hat)
+            bot += len(y_tru) + len(y_hat)
 
 
         return 1 - 2*((top + eps)/(bot + eps)) 

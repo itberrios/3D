@@ -23,3 +23,6 @@ criterion = PointNetLoss(alpha=alpha, gamma=gamma, reg_weight=REG_WEIGHT).to(DEV
 *****************************************************************************************************
 Test Results
 Model 60: Test Loss: 0.4479 - Test Accuracy: 0.7449 - Test MCC: 0.7001
+
+# different test loss and NUM_TEST_POINTS = 15000
+Model 60: Test Loss: 0.7072 - Test Accuracy: 0.7416 - Test MCC: 0.6964- Test IOU: 0.5984

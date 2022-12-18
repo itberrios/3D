@@ -13,11 +13,12 @@ from torch.utils.data import Dataset
 
 
 class S3DIS(Dataset):
-    def __init__(self, root, area_nums, split='train', npoints=4096):
+    def __init__(self, root, area_nums, split='train', npoints=4096, r_prob=0.25):
         self.root = root
         self.area_nums = area_nums # i.e. '1-4' # areas 1-4
         self.split = split.lower() # use 'test' in order to bypass augmentations
         self.npoints = npoints     # use  None to sample all the points
+        self.r_prob = r_prob       # probability of rotation
 
         # glob all hdf paths
         areas = glob(os.path.join(root, f'Area_[{area_nums}]*'))
@@ -53,8 +54,9 @@ class S3DIS(Dataset):
             # add N(0, 1/100) noise
             points += np.random.normal(0., 0.01, points.shape)
 
-            # add random rotation to the point cloud
-            points = self.random_rotate(points)
+            # add random rotation to the point cloud with probability
+            if np.random.uniform(0, 1) > 1 - self.r_prob:
+                points = self.random_rotate(points)
 
 
         # Normalize Point Cloud to (0, 1)
