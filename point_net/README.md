@@ -8,3 +8,4 @@ Run pointnet_cls.ipynb to get started. Some code inspired from this [repository]
 ## Point Net Segmentation
 Run pointnet_seg.ipynb to get started.
 
+![image](https://user-images.githubusercontent.com/60835780/208414214-d341c084-ae4c-422e-8cee-6a0a91e40bf8.png)
