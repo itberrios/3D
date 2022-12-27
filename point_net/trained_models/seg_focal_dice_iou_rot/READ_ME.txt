@@ -12,8 +12,6 @@ alpha[-1] *= 0.75  # balance clutter class
 gamma = 1
 
 optimizer = optim.Adam(seg_model.parameters(), lr=LR)
-scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.0001, max_lr=0.01, 
-                                              step_size_up=2000, cycle_momentum=False)
 criterion = PointNetSegLoss(alpha=alpha, gamma=gamma, dice=True).to(DEVICE)
 
 **************************************************************************************************
