@@ -4,6 +4,7 @@
     '''
 
 import os
+import sys
 from glob import glob
 import random
 import numpy as np
@@ -22,6 +23,14 @@ class S3DIS(Dataset):
 
         # glob all hdf paths
         areas = glob(os.path.join(root, f'Area_[{area_nums}]*'))
+
+        # check that datapaths are valid, if not raise error
+        if len(areas) == 0:
+            raise FileNotFoundError("NO VALID FILEPATHS FOUND!")
+
+        for p in areas:
+            if not os.path.exists(p):
+                raise FileNotFoundError(f"PATH NOT VALID: {p} \n")
 
         # get all datapaths
         self.data_paths = []
