@@ -55,6 +55,7 @@ In the S3DIS dataset the axis does not start from 0,0,0. And I believe that each
 The data of annotation is stored in the `Annotations` folder. Each area has its own folder. In that folder, are all the objects that are in that area. Each object is stored in a `.txt` file, with the same `XYZ RGB` format as the main point cloud. 
 
 **Sample: Conference Room Door**
+
 ![Conferance Room Door](./imgs/conf_door.png)
 
 
