@@ -96,7 +96,7 @@ As coded in [this Notebook](../s3dis_raw_explorer.ipynb), they remove the `RGB` 
 ## Partitioning the Data
 The main idea behind partitioning the data, deployed by [Issac Berrios](https://github.com/itberrios) is as follows:
 
-* Each Space is divided into 1.5m x 1.5m blocks (all of the z axis is included).
+* Each Space is divided into approximately 1m x 1m (parameter `c=1.5`) blocks (all of the z axis is included).
     - In the code first, the min and max of the x and y axis are calculated.
     - Then the rounded number of blocks (int) in each axis is calculated, using a hyperparameter `c` which is the size of the block in meters. (since it is rounded, the actual size of the block might be exactly `c`.)
     - using the `np.histogram` the boundaries of the blocks are calculated.
